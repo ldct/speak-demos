@@ -103,7 +103,7 @@ class App extends Component {
       >
 
       <div>
-      Écoutez la prononciation du mot ci-dessous et pratiquez la prononciation.Lorsque vous êtes prêt, cliquez sur le bouton d’enregistrement. Si le mot est bien prononcé, il s’affichera à droite.
+      Écoutez la prononciation du mot ci-dessous en cliquant sur l’icône audio. Lorsque vous êtes prêt, cliquez sur le bouton d’enregistrement. Si le mot est bien prononcé, il s’affichera en vert.
 
       <div style={{
         backgroundColor: '#DCDBFF',
