@@ -12,9 +12,11 @@ import vendredi from './5-vendredi.mp3';
 import samedi from './6-samedi.mp3';
 import dimanche from './7-dimanche.mp3';
 
+import ReactOutsideEvent from 'react-outside-event';
+
 import './App.css';
 
-class VocabEntry extends Component {
+class _VocabEntry extends Component {
   constructor(props) {
     super(props);
 
@@ -31,6 +33,10 @@ class VocabEntry extends Component {
 
     this.recognition.onresult = this.onRecognitionResult.bind(this);
     this.recognition.onend = this.onRecognitionEnd.bind(this);
+  }
+
+  onOutsideEvent() {
+    this.recognition.stop();
   }
 
   onRecognitionEnd() {
@@ -54,15 +60,21 @@ class VocabEntry extends Component {
   handleClickPlay() {
     this.audio.play();
   }
-  handleClickRec() {
-    this.setState({
-      active: true,
-    });
-    this.recognition.start();
+  handleClickRec(e) {
+
+    e.stopPropagation();
+
+    if (!this.state.active) {
+      this.setState({
+        active: true,
+      });
+      this.recognition.start();
+
+    }
   }
   render() {
     return <div style={{
-        display: 'flex',
+        display: 'inline-flex',
         alignItems: 'center',
         marginTop: 8, marginBottom: 8
       }}>
@@ -93,6 +105,8 @@ class VocabEntry extends Component {
   }
 }
 
+const VocabEntry = ReactOutsideEvent(_VocabEntry, ['click']);
+
 class App extends Component {
   render() {
     return (
@@ -108,6 +122,9 @@ class App extends Component {
       <div style={{
         backgroundColor: '#DCDBFF',
         marginTop: 30,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
       }}>
         <VocabEntry word="lundi" audioSrc={lundi} />
         <VocabEntry word="mardi" audioSrc={mardi} />
