@@ -72,11 +72,18 @@ class _VocabEntry extends Component {
 
     }
   }
+  renderIcon() {
+    if (this.state.lastWord === this.props.word) {
+      return <span style={{color: 'green'}}>✔</span>
+    } else {
+      return <img alt="rec" src={this.state.active ? recActive : rec} style={{height: '1.1em'}} />
+    }
+  }
   render() {
     return <div style={{
         display: 'inline-flex',
         alignItems: 'center',
-        marginTop: 8, marginBottom: 8
+        marginTop: 8, marginBottom: 8,
       }}>
       <audio ref={(a) => this.audio = a} src={this.props.audioSrc}></audio>
       <img alt="play" id="1-audio-button" src={play} width={33} height={30} style={{
@@ -96,11 +103,10 @@ class _VocabEntry extends Component {
       }}
       onClick={this.handleClickRec.bind(this)}
       >
-      <img alt="rec" src={this.state.active ? recActive : rec} style={{height: '1.1em'}} />
+      {this.renderIcon()}
       <span style={{color: 'grey'}}></span>
       <span>{this.state.lastWord}</span>
       </div>
-      <span style={{color: 'green'}}>{this.state.lastWord === this.props.word ? "✔" : ""}</span>
       </div>
   }
 }
