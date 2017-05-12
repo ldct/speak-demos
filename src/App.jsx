@@ -258,12 +258,6 @@ var Recorder = function(source, cfg){
   this.node.connect(this.context.destination);   // if the script node is not connected to an output the "onaudioprocess" event is not triggered in chrome.
 };
 
-Recorder.setupDownload = function(blob, filename, link){
-  var url = (window.URL || window.webkitURL).createObjectURL(blob);
-  link.href = url;
-  link.download = filename || 'output.wav';
-}
-
 window.Recorder = Recorder;
 
 
@@ -300,7 +294,40 @@ class App2 extends Component {
   }
 
   doneEncoding(blob) {
-    window.Recorder.setupDownload( blob, "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".wav", this.link);
+
+    console.log(blob);
+
+    var reader = new window.FileReader();
+    reader.addEventListener("loadend", function() {
+
+      var base64FileData = reader.result.toString();
+
+      var mediaFile = {
+        size: blob.size,
+        type: blob.type,
+        src: base64FileData,
+        srcSize: base64FileData.length,
+      };
+
+      console.log(mediaFile);
+
+      // save the file info to localStorage
+      localStorage.setItem('myTest', JSON.stringify(mediaFile));
+
+      // read out the file info from localStorage again
+      var reReadItem = JSON.parse(localStorage.getItem('myTest'));
+
+      // audioControl.src = reReadItem.src;
+
+    });
+
+    reader.readAsDataURL(blob);
+
+
+    const url = window.URL.createObjectURL(blob);
+    const filename = "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".wav";
+    this.link.href = url;
+    this.link.download = filename || 'output.wav';
     this.recIndex++;
   }
 
@@ -330,8 +357,6 @@ class App2 extends Component {
 
         drawBuffer( canvas.width, canvas.height, canvas.getContext('2d'), buffers[0] );
 
-        // the ONLY time gotBuffers is called is right after a new recording is completed -
-        // so here's where we should set up the download.
         this.audioRecorder.exportWAV( this.doneEncoding.bind(this) );
   }
 
@@ -360,7 +385,6 @@ class App2 extends Component {
             this.analyserContext = canvas.getContext('2d');
         }
 
-        // analyzer draw code here
         {
             var SPACING = 3;
             var BAR_WIDTH = 1;
@@ -444,13 +468,13 @@ class App2 extends Component {
           width: '95%',
           height: '45%',
           boxShadow: '0px 0px 10px blue',
-        }} ref={a => {this.analyserCanvas = a} } id="analyser" width="1024" height="200"></canvas>
+        }} ref={a => {this.analyserCanvas = a} } width="1024" height="200"></canvas>
         <canvas style={{
           background: '#202020',
           width: '95%',
           height: '45%',
           boxShadow: '0px 0px 10px blue',
-        }} ref={w => {this.wavedisplay = w}} id="wavedisplay" width="1024" height="200"></canvas>
+        }} ref={w => {this.wavedisplay = w}} width="1024" height="200"></canvas>
       </div>
       <div id="controls" style={{
         display: 'flex',
@@ -460,11 +484,11 @@ class App2 extends Component {
         height: '100%',
         width: '10%',
       }}>
-        <img id="record" style={{
-          height: '15vh',
-        }}
+        <img style={{ height: '15vh', }}
         src={mic128} onClick={this.toggleRecording.bind(this)} />
-        <a id="save" href="#" ref={l => {this.link = l}}><img src={save} /></a>
+        <a href="#" ref={l => {this.link = l}}><img src={save} /></a>
+        hi
+        hi
       </div>
 
     </div>

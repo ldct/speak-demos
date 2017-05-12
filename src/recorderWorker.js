@@ -1,6 +1,5 @@
 const worker = function () {
 
-
 var recLength = 0,
   recBuffersL = [],
   recBuffersR = [],
