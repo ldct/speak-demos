@@ -12,6 +12,9 @@ import vendredi from './5-vendredi.mp3';
 import samedi from './6-samedi.mp3';
 import dimanche from './7-dimanche.mp3';
 
+import save from './save.svg';
+import mic128 from './mic128.png';
+
 import ReactOutsideEvent from 'react-outside-event';
 
 import './App.css';
@@ -113,6 +116,23 @@ class _VocabEntry extends Component {
 
 const VocabEntry = ReactOutsideEvent(_VocabEntry, ['click']);
 
+class VocabEntryList extends Component {
+  render() {
+    return <div style={{
+      backgroundColor: '#DCDBFF',
+      marginTop: 30,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+    }}>
+    {this.props.entries.map((entry, i) => {
+      return <VocabEntry word={entry.word} audioSrc={entry.audioSrc} key={i} />
+    })}
+    <div>Add more</div>
+    </div>
+  }
+}
+
 class App extends Component {
   render() {
     return (
@@ -125,25 +145,475 @@ class App extends Component {
       <div>
       Écoutez la prononciation du mot ci-dessous en cliquant sur l’icône audio. Lorsque vous êtes prêt, cliquez sur le bouton d’enregistrement. Si le mot est bien prononcé, il s’affichera en vert.
 
-      <div style={{
-        backgroundColor: '#DCDBFF',
-        marginTop: 30,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-start',
-      }}>
-        <VocabEntry word="lundi" audioSrc={lundi} />
-        <VocabEntry word="mardi" audioSrc={mardi} />
-        <VocabEntry word="mercredi" audioSrc={mercredi} />
-        <VocabEntry word="jeudi" audioSrc={jeudi} />
-        <VocabEntry word="vendredi" audioSrc={vendredi} />
-        <VocabEntry word="samedi" audioSrc={samedi} />
-        <VocabEntry word="dimanche" audioSrc={dimanche} />
-      </div>
+      <VocabEntryList entries={[
+        {word: "lundi", audioSrc: lundi},
+        {word: "mardi", audioSrc: mardi},
+        {word: "mercredi", audioSrc: mercredi},
+        {word: "jeudi", audioSrc: jeudi},
+        {word: "vendredi", audioSrc: vendredi},
+        {word: "samedi", audioSrc: samedi},
+        {word: "dimanche", audioSrc: dimanche},
+      ]} />
+
       </div>
       </div>
     );
   }
 }
 
-export default App;
+// Build a worker from an anonymous function body
+var blobURL = URL.createObjectURL( new Blob([ '(',
+
+function () {
+
+
+var recLength = 0,
+  recBuffersL = [],
+  recBuffersR = [],
+  sampleRate;
+
+this.onmessage = function(e){
+  switch(e.data.command){
+    case 'init':
+      init(e.data.config);
+      break;
+    case 'record':
+      record(e.data.buffer);
+      break;
+    case 'exportWAV':
+      exportWAV(e.data.type);
+      break;
+    case 'exportMonoWAV':
+      exportMonoWAV(e.data.type);
+      break;
+    case 'getBuffers':
+      getBuffers();
+      break;
+    case 'clear':
+      clear();
+      break;
+  }
+};
+
+function init(config){
+  sampleRate = config.sampleRate;
+}
+
+function record(inputBuffer){
+  recBuffersL.push(inputBuffer[0]);
+  recBuffersR.push(inputBuffer[1]);
+  recLength += inputBuffer[0].length;
+}
+
+function exportWAV(type){
+  var bufferL = mergeBuffers(recBuffersL, recLength);
+  var bufferR = mergeBuffers(recBuffersR, recLength);
+  var interleaved = interleave(bufferL, bufferR);
+  var dataview = encodeWAV(interleaved);
+  var audioBlob = new Blob([dataview], { type: type });
+
+  this.postMessage(audioBlob);
+}
+
+function exportMonoWAV(type){
+  var bufferL = mergeBuffers(recBuffersL, recLength);
+  var dataview = encodeWAV(bufferL, true);
+  var audioBlob = new Blob([dataview], { type: type });
+
+  this.postMessage(audioBlob);
+}
+
+function getBuffers() {
+  var buffers = [];
+  buffers.push( mergeBuffers(recBuffersL, recLength) );
+  buffers.push( mergeBuffers(recBuffersR, recLength) );
+  this.postMessage(buffers);
+}
+
+function clear(){
+  recLength = 0;
+  recBuffersL = [];
+  recBuffersR = [];
+}
+
+function mergeBuffers(recBuffers, recLength){
+  var result = new Float32Array(recLength);
+  var offset = 0;
+  for (var i = 0; i < recBuffers.length; i++){
+    result.set(recBuffers[i], offset);
+    offset += recBuffers[i].length;
+  }
+  return result;
+}
+
+function interleave(inputL, inputR){
+  var length = inputL.length + inputR.length;
+  var result = new Float32Array(length);
+
+  var index = 0,
+    inputIndex = 0;
+
+  while (index < length){
+    result[index++] = inputL[inputIndex];
+    result[index++] = inputR[inputIndex];
+    inputIndex++;
+  }
+  return result;
+}
+
+function floatTo16BitPCM(output, offset, input){
+  for (var i = 0; i < input.length; i++, offset+=2){
+    var s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeString(view, offset, string){
+  for (var i = 0; i < string.length; i++){
+    view.setUint8(offset + i, string.charCodeAt(i));
+  }
+}
+
+function encodeWAV(samples, mono){
+  var buffer = new ArrayBuffer(44 + samples.length * 2);
+  var view = new DataView(buffer);
+
+  /* RIFF identifier */
+  writeString(view, 0, 'RIFF');
+  /* file length */
+  view.setUint32(4, 32 + samples.length * 2, true);
+  /* RIFF type */
+  writeString(view, 8, 'WAVE');
+  /* format chunk identifier */
+  writeString(view, 12, 'fmt ');
+  /* format chunk length */
+  view.setUint32(16, 16, true);
+  /* sample format (raw) */
+  view.setUint16(20, 1, true);
+  /* channel count */
+  view.setUint16(22, mono?1:2, true);
+  /* sample rate */
+  view.setUint32(24, sampleRate, true);
+  /* byte rate (sample rate * block align) */
+  view.setUint32(28, sampleRate * 4, true);
+  /* block align (channel count * bytes per sample) */
+  view.setUint16(32, 4, true);
+  /* bits per sample */
+  view.setUint16(34, 16, true);
+  /* data chunk identifier */
+  writeString(view, 36, 'data');
+  /* data chunk length */
+  view.setUint32(40, samples.length * 2, true);
+
+  floatTo16BitPCM(view, 44, samples);
+
+  return view;
+}
+
+
+}.toString(),
+
+')()' ], { type: 'application/javascript' } ) );
+
+
+var Recorder = function(source, cfg){
+  var config = cfg || {};
+  var bufferLen = config.bufferLen || 4096;
+  this.context = source.context;
+  if(!this.context.createScriptProcessor){
+     this.node = this.context.createJavaScriptNode(bufferLen, 2, 2);
+  } else {
+     this.node = this.context.createScriptProcessor(bufferLen, 2, 2);
+  }
+
+  var worker = new Worker( blobURL );
+  URL.revokeObjectURL( blobURL );
+
+  worker.postMessage({
+    command: 'init',
+    config: {
+      sampleRate: this.context.sampleRate
+    }
+  });
+  var recording = false,
+    currCallback;
+
+  this.node.onaudioprocess = function(e){
+    if (!recording) return;
+    worker.postMessage({
+      command: 'record',
+      buffer: [
+        e.inputBuffer.getChannelData(0),
+        e.inputBuffer.getChannelData(1)
+      ]
+    });
+  }
+
+  this.configure = function(cfg){
+    for (var prop in cfg){
+      if (cfg.hasOwnProperty(prop)){
+        config[prop] = cfg[prop];
+      }
+    }
+  }
+
+  this.record = function(){
+    recording = true;
+  }
+
+  this.stop = function(){
+    recording = false;
+  }
+
+  this.clear = function(){
+    worker.postMessage({ command: 'clear' });
+  }
+
+  this.getBuffers = function(cb) {
+    currCallback = cb || config.callback;
+    worker.postMessage({ command: 'getBuffers' })
+  }
+
+  this.exportWAV = function(cb, type){
+    currCallback = cb || config.callback;
+    type = type || config.type || 'audio/wav';
+    if (!currCallback) throw new Error('Callback not set');
+    worker.postMessage({
+      command: 'exportWAV',
+      type: type
+    });
+  }
+
+  this.exportMonoWAV = function(cb, type){
+    currCallback = cb || config.callback;
+    type = type || config.type || 'audio/wav';
+    if (!currCallback) throw new Error('Callback not set');
+    worker.postMessage({
+      command: 'exportMonoWAV',
+      type: type
+    });
+  }
+
+  worker.onmessage = function(e){
+    var blob = e.data;
+    currCallback(blob);
+  }
+
+  source.connect(this.node);
+  this.node.connect(this.context.destination);   // if the script node is not connected to an output the "onaudioprocess" event is not triggered in chrome.
+};
+
+Recorder.setupDownload = function(blob, filename, link){
+  var url = (window.URL || window.webkitURL).createObjectURL(blob);
+  link.href = url;
+  link.download = filename || 'output.wav';
+}
+
+window.Recorder = Recorder;
+
+
+
+class App2 extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      recording: false,
+    }
+  }
+  gotStream(stream) {
+        this.inputPoint = this.audioContext.createGain();
+
+        // Create an AudioNode from the stream.
+        this.realAudioInput = this.audioContext.createMediaStreamSource(stream);
+        this.audioInput = this.realAudioInput;
+        this.audioInput.connect(this.inputPoint);
+
+        // audioInput = convertToMono( input );
+
+        this.analyserNode = this.audioContext.createAnalyser();
+        this.analyserNode.fftSize = 2048;
+        this.inputPoint.connect( this.analyserNode );
+
+        this.audioRecorder = new window.Recorder( this.inputPoint );
+
+        this.zeroGain = this.audioContext.createGain();
+        this.zeroGain.gain.value = 0.0;
+        this.inputPoint.connect( this.zeroGain );
+        this.zeroGain.connect( this.audioContext.destination );
+
+        this.updateAnalysers();
+  }
+
+  doneEncoding(blob) {
+    window.Recorder.setupDownload( blob, "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".wav", this.link);
+    this.recIndex++;
+  }
+
+  gotBuffers(buffers) {
+
+    const drawBuffer = function ( width, height, context, data ) {
+        var step = Math.ceil( data.length / width );
+        var amp = height / 2;
+        context.fillStyle = "silver";
+        context.clearRect(0,0,width,height);
+        for(var i=0; i < width; i++){
+            var min = 1.0;
+            var max = -1.0;
+            for (var j=0; j<step; j++) {
+                var datum = data[(i*step)+j];
+                if (datum < min)
+                    min = datum;
+                if (datum > max)
+                    max = datum;
+            }
+            context.fillRect(i,(1+min)*amp,1,Math.max(1,(max-min)*amp));
+        }
+    }
+
+
+        var canvas = this.wavedisplay;
+
+        drawBuffer( canvas.width, canvas.height, canvas.getContext('2d'), buffers[0] );
+
+        // the ONLY time gotBuffers is called is right after a new recording is completed -
+        // so here's where we should set up the download.
+        this.audioRecorder.exportWAV( this.doneEncoding.bind(this) );
+  }
+
+  toggleRecording() {
+    console.log('hi', this);
+    if (this.state.recording) {
+      this.setState({
+        recording: false,
+      });
+      this.audioRecorder.stop();
+      this.audioRecorder.getBuffers( this.gotBuffers.bind(this) );
+    } else {
+      this.setState({
+        recording: true,
+      });
+      this.audioRecorder.clear();
+      this.audioRecorder.record();
+    }
+  }
+
+  updateAnalysers(time) {
+        if (!this.analyserContext) {
+            var canvas = this.analyserCanvas;
+            this.canvasWidth = canvas.width;
+            this.canvasHeight = canvas.height;
+            this.analyserContext = canvas.getContext('2d');
+        }
+
+        // analyzer draw code here
+        {
+            var SPACING = 3;
+            var BAR_WIDTH = 1;
+            var numBars = Math.round(this.canvasWidth / SPACING);
+            var freqByteData = new Uint8Array(this.analyserNode.frequencyBinCount);
+
+            this.analyserNode.getByteFrequencyData(freqByteData);
+
+            this.analyserContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+            this.analyserContext.fillStyle = '#F6D565';
+            this.analyserContext.lineCap = 'round';
+            var multiplier = this.analyserNode.frequencyBinCount / numBars;
+
+            // Draw rectangle for each frequency bin.
+            for (var i = 0; i < numBars; ++i) {
+                var magnitude = 0;
+                var offset = Math.floor( i * multiplier );
+                // gotta sum/average the block, or we miss narrow-bandwidth spikes
+                for (var j = 0; j< multiplier; j++)
+                    magnitude += freqByteData[offset + j];
+                magnitude = magnitude / multiplier;
+                var magnitude2 = freqByteData[i * multiplier];
+                this.analyserContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
+                this.analyserContext.fillRect(i * SPACING, this.canvasHeight, BAR_WIDTH, -magnitude);
+            }
+        }
+
+        this.rafID = window.requestAnimationFrame( this.updateAnalysers.bind(this) );
+      }
+
+  componentDidMount() {
+
+    this.audioContext = new AudioContext();
+    this.audioInput = null;
+    this.realAudioInput = null;
+    this.inputPoint = null;
+    this.audioRecorder = null;
+    this.rafID = null;
+    this.analyserContext = null;
+    this.canvasWidth = null;
+    this.canvasHeight = null;
+    this.recIndex = 0;
+
+    if (!window.navigator.getUserMedia)
+        window.navigator.getUserMedia = window.navigator.webkitGetUserMedia || window.navigator.mozGetUserMedia;
+    if (!window.navigator.cancelAnimationFrame)
+        window.navigator.cancelAnimationFrame = window.navigator.webkitCancelAnimationFrame || window.navigator.mozCancelAnimationFrame;
+    if (!window.navigator.requestAnimationFrame)
+        window.navigator.requestAnimationFrame = window.navigator.webkitRequestAnimationFrame || window.navigator.mozRequestAnimationFrame;
+
+    window.navigator.getUserMedia({
+        "audio": {
+            "mandatory": {
+                "googEchoCancellation": "false",
+                "googAutoGainControl": "false",
+                "googNoiseSuppression": "false",
+                "googHighpassFilter": "false"
+            },
+            "optional": []
+        },
+    }, this.gotStream.bind(this), function(e) {
+        alert('Error getting audio');
+        console.log(e);
+    });
+  }
+  render() {
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'row',
+    }}>
+      <div id="viz" style={{
+        height: '80%',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+      }}>
+        <canvas style={{
+          background: '#202020',
+          width: '95%',
+          height: '45%',
+          boxShadow: '0px 0px 10px blue',
+        }} ref={a => {this.analyserCanvas = a} } id="analyser" width="1024" height="200"></canvas>
+        <canvas style={{
+          background: '#202020',
+          width: '95%',
+          height: '45%',
+          boxShadow: '0px 0px 10px blue',
+        }} ref={w => {this.wavedisplay = w}} id="wavedisplay" width="1024" height="200"></canvas>
+      </div>
+      <div id="controls" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        height: '100%',
+        width: '10%',
+      }}>
+        <img id="record" style={{
+          height: '15vh',
+        }}
+        src={mic128} onClick={this.toggleRecording.bind(this)} />
+        <a id="save" href="#" ref={l => {this.link = l}}><img src={save} /></a>
+      </div>
+
+    </div>
+  }
+}
+
+export default App2;
