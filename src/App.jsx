@@ -24,6 +24,14 @@ import Recorder from './Recorder.js';
 import parseWav from './parseWav.js';
 import Uint8ArrayToFloat32Array from './Uint8ArrayToFloat32Array.js';
 
+import {
+  BrowserRouter as Router,
+  Route,
+  Link,
+  browserHistory,
+  Switch,
+  Redirect
+} from 'react-router-dom'
 
 class _VocabEntry extends Component {
   constructor(props) {
@@ -139,7 +147,7 @@ class VocabEntryList extends Component {
   }
 }
 
-class App extends Component {
+class VocabEntryListDemo extends Component {
   render() {
     return (
       <div style={{
@@ -169,7 +177,7 @@ class App extends Component {
 
 
 
-class App2 extends Component {
+class RecorderDemo extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -450,4 +458,26 @@ class App2 extends Component {
   }
 }
 
-export default App2;
+class NotFound extends Component {
+  render() {
+    return <h1>Not found</h1>
+  }
+}
+
+class App extends Component {
+  render () {
+    return <div>
+    <Router history={browserHistory}>
+      <Switch>
+        <Redirect exact from="/" to="/vocab" />
+        <Route exact path="/vocab" component={VocabEntryListDemo} />
+        <Route exact path="/record" component={RecorderDemo} />
+        <Route path="*" component={NotFound} />
+      </Switch>
+    </Router>
+    </div>
+  }
+}
+
+
+export default App;

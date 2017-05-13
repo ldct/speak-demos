@@ -8,7 +8,9 @@
   "dependencies": {
     "react": "^15.5.4",
     "react-dom": "^15.5.4",
-    "react-outside-event": "^1.2.4"
+    "react-outside-event": "^1.2.4",
+    "react-router": "^4.1.1",
+    "react-router-dom": "^4.1.1"
   },
   "scripts": {
     "start": "react-scripts start",
