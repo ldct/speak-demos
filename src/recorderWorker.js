@@ -22,6 +22,8 @@ this.onmessage = function(e){
     case 'clear':
       clear();
       break;
+    default:
+      throw new Error('unknown message');
   }
 };
 
@@ -65,21 +67,6 @@ function mergeBuffers(recBuffers, recLength){
   for (var i = 0; i < recBuffers.length; i++){
     result.set(recBuffers[i], offset);
     offset += recBuffers[i].length;
-  }
-  return result;
-}
-
-function interleave(inputL, inputR){
-  var length = inputL.length + inputR.length;
-  var result = new Float32Array(length);
-
-  var index = 0,
-    inputIndex = 0;
-
-  while (index < length){
-    result[index++] = inputL[inputIndex];
-    result[index++] = inputR[inputIndex];
-    inputIndex++;
   }
   return result;
 }

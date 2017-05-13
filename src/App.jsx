@@ -34,8 +34,8 @@ const parseWav = function(wav) {
     }
     return ret;
   };
-  if (readInt(20, 2) != 1) throw 'Invalid compression code, not PCM';
-  if (readInt(22, 2) != 1) throw 'Invalid number of channels, not 1';
+  if (readInt(20, 2) !== 1) throw new Error('Invalid compression code, not PCM');
+  if (readInt(22, 2) !== 1) throw new Error('Invalid number of channels, not 1');
   return {
     sampleRate: readInt(24, 4),
     bitsPerSample: readInt(34, 2),
@@ -449,42 +449,40 @@ class App2 extends Component {
   }
 
   updateAnalysers(time) {
-        if (!this.analyserContext) {
-            var canvas = this.analyserCanvas;
-            this.canvasWidth = canvas.width;
-            this.canvasHeight = canvas.height;
-            this.analyserContext = canvas.getContext('2d');
-        }
+    if (!this.analyserContext) {
+        var canvas = this.analyserCanvas;
+        this.canvasWidth = canvas.width;
+        this.canvasHeight = canvas.height;
+        this.analyserContext = canvas.getContext('2d');
+    }
 
-        {
-            var SPACING = 3;
-            var BAR_WIDTH = 1;
-            var numBars = Math.round(this.canvasWidth / SPACING);
-            var freqByteData = new Uint8Array(this.analyserNode.frequencyBinCount);
+    var SPACING = 3;
+    var BAR_WIDTH = 1;
+    var numBars = Math.round(this.canvasWidth / SPACING);
+    var freqByteData = new Uint8Array(this.analyserNode.frequencyBinCount);
 
-            this.analyserNode.getByteFrequencyData(freqByteData);
+    this.analyserNode.getByteFrequencyData(freqByteData);
 
-            this.analyserContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
-            this.analyserContext.fillStyle = '#F6D565';
-            this.analyserContext.lineCap = 'round';
-            var multiplier = this.analyserNode.frequencyBinCount / numBars;
+    this.analyserContext.clearRect(0, 0, this.canvasWidth, this.canvasHeight);
+    this.analyserContext.fillStyle = '#F6D565';
+    this.analyserContext.lineCap = 'round';
+    var multiplier = this.analyserNode.frequencyBinCount / numBars;
 
-            // Draw rectangle for each frequency bin.
-            for (var i = 0; i < numBars; ++i) {
-                var magnitude = 0;
-                var offset = Math.floor( i * multiplier );
-                // gotta sum/average the block, or we miss narrow-bandwidth spikes
-                for (var j = 0; j< multiplier; j++)
-                    magnitude += freqByteData[offset + j];
-                magnitude = magnitude / multiplier;
-                var magnitude2 = freqByteData[i * multiplier];
-                this.analyserContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
-                this.analyserContext.fillRect(i * SPACING, this.canvasHeight, BAR_WIDTH, -magnitude);
-            }
-        }
+    // Draw rectangle for each frequency bin.
+    for (var i = 0; i < numBars; ++i) {
+        var magnitude = 0;
+        var offset = Math.floor( i * multiplier );
+        // gotta sum/average the block, or we miss narrow-bandwidth spikes
+        for (var j = 0; j< multiplier; j++)
+            magnitude += freqByteData[offset + j];
+        magnitude /= multiplier;
+        // var magnitude2 = freqByteData[i * multiplier];
+        this.analyserContext.fillStyle = "hsl( " + Math.round((i*360)/numBars) + ", 100%, 50%)";
+        this.analyserContext.fillRect(i * SPACING, this.canvasHeight, BAR_WIDTH, -magnitude);
+    }
 
-        this.rafID = window.requestAnimationFrame( this.updateAnalysers.bind(this) );
-      }
+    this.rafID = window.requestAnimationFrame( this.updateAnalysers.bind(this) );
+  }
 
   componentDidMount() {
 
@@ -555,11 +553,11 @@ class App2 extends Component {
         height: '100%',
         width: '10%',
       }}>
-        <img style={{ height: '15vh', }}
+        <img alt="mic" style={{ height: '15vh', }}
         src={mic128} onClick={this.toggleRecording.bind(this)} />
-        <a href="#" ref={l => {this.link = l}}><img src={save} /></a>
-        hi
-        hi
+        <a href="#" ref={l => {this.link = l}}>
+          <img alt="save" src={save} />
+        </a>
       </div>
 
     </div>
