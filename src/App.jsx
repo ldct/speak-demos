@@ -21,6 +21,39 @@ import './App.css';
 
 import recorderWorker from './recorderWorker.js';
 
+const parseWav = function(wav) {
+  var readInt = function(i, bytes) {
+    var ret = 0,
+      shft = 0;
+
+    while (bytes) {
+      ret += wav[i] << shft;
+      shft += 8;
+      i++;
+      bytes--;
+    }
+    return ret;
+  };
+  if (readInt(20, 2) != 1) throw 'Invalid compression code, not PCM';
+  if (readInt(22, 2) != 1) throw 'Invalid number of channels, not 1';
+  return {
+    sampleRate: readInt(24, 4),
+    bitsPerSample: readInt(34, 2),
+    samples: wav.subarray(44)
+  };
+};
+
+const Uint8ArrayToFloat32Array = function (u8a){
+  var f32Buffer = new Float32Array(u8a.length);
+  for (var i = 0; i < u8a.length; i++) {
+    var value = u8a[i<<1] + (u8a[(i<<1)+1]<<8);
+    if (value >= 0x8000) value |= ~0x7FFF;
+    f32Buffer[i] = value / 0x8000;
+  }
+  return f32Buffer;
+}
+
+
 class _VocabEntry extends Component {
   constructor(props) {
     super(props);
@@ -164,12 +197,7 @@ class App extends Component {
 }
 
 // Build a worker from an anonymous function body
-var blobURL = URL.createObjectURL( new Blob([ '(',
-
-recorderWorker.toString(),
-
-')()' ], { type: 'application/javascript' } ) );
-
+var workerBlobURL = URL.createObjectURL( new Blob([ '(', recorderWorker.toString(), ')()' ], { type: 'application/javascript' } ) );
 
 var Recorder = function(source, cfg){
   var config = cfg || {};
@@ -181,8 +209,8 @@ var Recorder = function(source, cfg){
      this.node = this.context.createScriptProcessor(bufferLen, 2, 2);
   }
 
-  var worker = new Worker( blobURL );
-  URL.revokeObjectURL( blobURL );
+  var worker = new Worker( workerBlobURL );
+  URL.revokeObjectURL( workerBlobURL );
 
   worker.postMessage({
     command: 'init',
@@ -190,6 +218,8 @@ var Recorder = function(source, cfg){
       sampleRate: this.context.sampleRate
     }
   });
+
+
   var recording = false,
     currCallback;
 
@@ -199,7 +229,7 @@ var Recorder = function(source, cfg){
       command: 'record',
       buffer: [
         e.inputBuffer.getChannelData(0),
-        e.inputBuffer.getChannelData(1)
+        // e.inputBuffer.getChannelData(1)
       ]
     });
   }
@@ -239,20 +269,11 @@ var Recorder = function(source, cfg){
     });
   }
 
-  this.exportMonoWAV = function(cb, type){
-    currCallback = cb || config.callback;
-    type = type || config.type || 'audio/wav';
-    if (!currCallback) throw new Error('Callback not set');
-    worker.postMessage({
-      command: 'exportMonoWAV',
-      type: type
-    });
-  }
-
-  worker.onmessage = function(e){
+  worker.onmessage = function(e) {
     var blob = e.data;
     currCallback(blob);
   }
+
 
   source.connect(this.node);
   this.node.connect(this.context.destination);   // if the script node is not connected to an output the "onaudioprocess" event is not triggered in chrome.
@@ -297,38 +318,89 @@ class App2 extends Component {
 
     console.log(blob);
 
-    var reader = new window.FileReader();
-    reader.addEventListener("loadend", function() {
+    var arrayBuffer;
+    var fileReader = new FileReader();
 
-      var base64FileData = reader.result.toString();
+    var self = this;
 
-      var mediaFile = {
-        size: blob.size,
-        type: blob.type,
-        src: base64FileData,
-        srcSize: base64FileData.length,
-      };
+    fileReader.onload = function() {
+      arrayBuffer = this.result;
+      var buffer = new Uint8Array(arrayBuffer),
+      data = parseWav(buffer);
 
-      console.log(mediaFile);
+      console.log(data);
+      console.log("Converting to Mp3");
 
-      // save the file info to localStorage
-      localStorage.setItem('myTest', JSON.stringify(mediaFile));
+      var mp3codec = window.Lame.init();
 
-      // read out the file info from localStorage again
-      var reReadItem = JSON.parse(localStorage.getItem('myTest'));
+      window.Lame.set_mode(mp3codec, 3);
+      window.Lame.set_num_channels(mp3codec, 1);
+      window.Lame.set_num_samples(mp3codec, -1);
+      window.Lame.set_in_samplerate(mp3codec, data.sampleRate);
+      window.Lame.set_out_samplerate(mp3codec, data.sampleRate);
+      window.Lame.set_bitrate(mp3codec, data.bitsPerSample);
 
-      // audioControl.src = reReadItem.src;
+      window.Lame.init_params(mp3codec);
+      console.log('Version :', window.Lame.get_version() + ' / ',
+        'Mode: '+window.Lame.get_mode(mp3codec) + ' / ',
+        'Samples: '+window.Lame.get_num_samples(mp3codec) + ' / ',
+        'Channels: '+window.Lame.get_num_channels(mp3codec) + ' / ',
+        'Input Samplate: '+ window.Lame.get_in_samplerate(mp3codec) + ' / ',
+        'Output Samplate: '+ window.Lame.get_in_samplerate(mp3codec) + ' / ',
+        'Bitlate :' +window.Lame.get_bitrate(mp3codec) + ' / ',
+        'VBR :' + window.Lame.get_VBR(mp3codec));
 
-    });
 
-    reader.readAsDataURL(blob);
+      var buf = Uint8ArrayToFloat32Array(data.samples);
+
+      var mp3data = window.Lame.encode_buffer_ieee_float(mp3codec, buf, buf);
+
+      var mp3Blob = new Blob([new Uint8Array(mp3data.data)], {type: 'audio/mp3'});
+
+      console.log(mp3Blob);
+
+      const url = window.URL.createObjectURL(mp3Blob);
+      const filename = "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".mp3";
+      self.link.href = url;
+      self.link.download = filename || 'output.mp3';
+      self.recIndex++;
+
+    };
+
+    fileReader.readAsArrayBuffer(blob);
+
+    // var reader = new window.FileReader();
+    // reader.addEventListener("loadend", function() {
+
+    //   var base64FileData = reader.result.toString();
+
+    //   var mediaFile = {
+    //     size: blob.size,
+    //     type: blob.type,
+    //     src: base64FileData,
+    //     srcSize: base64FileData.length,
+    //   };
+
+    //   console.log(mediaFile);
+
+    //   // save the file info to localStorage
+    //   localStorage.setItem('myTest', JSON.stringify(mediaFile));
+
+    //   // read out the file info from localStorage again
+    //   var reReadItem = JSON.parse(localStorage.getItem('myTest'));
+
+    //   // audioControl.src = reReadItem.src;
+
+    // });
+
+    // reader.readAsDataURL(blob);
 
 
-    const url = window.URL.createObjectURL(blob);
-    const filename = "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".wav";
-    this.link.href = url;
-    this.link.download = filename || 'output.wav';
-    this.recIndex++;
+    // const url = window.URL.createObjectURL(blob);
+    // const filename = "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".wav";
+    // this.link.href = url;
+    // this.link.download = filename || 'output.wav';
+    // this.recIndex++;
   }
 
   gotBuffers(buffers) {
@@ -361,7 +433,6 @@ class App2 extends Component {
   }
 
   toggleRecording() {
-    console.log('hi', this);
     if (this.state.recording) {
       this.setState({
         recording: false,
