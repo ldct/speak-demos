@@ -1,14 +1,5 @@
-import jeudi from './4-jeudi.mp3';
-import vendredi from './5-vendredi.mp3';
-import samedi from './6-samedi.mp3';
-import dimanche from './7-dimanche.mp3';
-
-import save from './save.svg';
-import mic128 from './mic128.png';
-
-import ReactOutsideEvent from 'react-outside-event';
-
 import React, { Component } from 'react';
+import ReactOutsideEvent from 'react-outside-event';
 
 import rec from './rec.png';
 import recActive from './rec-active.png';
