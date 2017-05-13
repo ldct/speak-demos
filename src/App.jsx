@@ -254,9 +254,8 @@ class RecorderDemo extends Component {
       console.log(mp3Blob);
 
       const url = window.URL.createObjectURL(mp3Blob);
-      const filename = "myRecording" + ((this.recIndex<10)?"0":"") + this.recIndex + ".mp3";
       self.link.href = url;
-      self.link.download = filename || 'output.mp3';
+      self.link.download = 'output.mp3';
       self.recIndex++;
 
     };
@@ -447,7 +446,11 @@ class RecorderDemo extends Component {
         height: '100%',
         width: '10%',
       }}>
-        <img alt="mic" style={{ height: '15vh', }}
+        <img alt="mic" style={{
+          height: '15vh',
+          cursor: 'pointer',
+          background: this.state.recording ? '-webkit-radial-gradient(center, ellipse cover, #ff0000 0%,white 75%,white 100%,#7db9e8 100%)' : null,
+        }}
         src={mic128} onClick={this.toggleRecording.bind(this)} />
         <a href="#" ref={l => {this.link = l}}>
           <img alt="save" src={save} />
