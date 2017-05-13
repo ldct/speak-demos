@@ -19,39 +19,10 @@ import ReactOutsideEvent from 'react-outside-event';
 
 import './App.css';
 
-import recorderWorker from './recorderWorker.js';
+import Recorder from './Recorder.js';
 
-const parseWav = function(wav) {
-  var readInt = function(i, bytes) {
-    var ret = 0,
-      shft = 0;
-
-    while (bytes) {
-      ret += wav[i] << shft;
-      shft += 8;
-      i++;
-      bytes--;
-    }
-    return ret;
-  };
-  if (readInt(20, 2) !== 1) throw new Error('Invalid compression code, not PCM');
-  if (readInt(22, 2) !== 1) throw new Error('Invalid number of channels, not 1');
-  return {
-    sampleRate: readInt(24, 4),
-    bitsPerSample: readInt(34, 2),
-    samples: wav.subarray(44)
-  };
-};
-
-const Uint8ArrayToFloat32Array = function (u8a){
-  var f32Buffer = new Float32Array(u8a.length);
-  for (var i = 0; i < u8a.length; i++) {
-    var value = u8a[i<<1] + (u8a[(i<<1)+1]<<8);
-    if (value >= 0x8000) value |= ~0x7FFF;
-    f32Buffer[i] = value / 0x8000;
-  }
-  return f32Buffer;
-}
+import parseWav from './parseWav.js';
+import Uint8ArrayToFloat32Array from './Uint8ArrayToFloat32Array.js';
 
 
 class _VocabEntry extends Component {
@@ -196,91 +167,6 @@ class App extends Component {
   }
 }
 
-// Build a worker from an anonymous function body
-var workerBlobURL = URL.createObjectURL( new Blob([ '(', recorderWorker.toString(), ')()' ], { type: 'application/javascript' } ) );
-
-var Recorder = function(source, cfg){
-  var config = cfg || {};
-  var bufferLen = config.bufferLen || 4096;
-  this.context = source.context;
-  if(!this.context.createScriptProcessor){
-     this.node = this.context.createJavaScriptNode(bufferLen, 2, 2);
-  } else {
-     this.node = this.context.createScriptProcessor(bufferLen, 2, 2);
-  }
-
-  var worker = new Worker( workerBlobURL );
-  URL.revokeObjectURL( workerBlobURL );
-
-  worker.postMessage({
-    command: 'init',
-    config: {
-      sampleRate: this.context.sampleRate
-    }
-  });
-
-
-  var recording = false,
-    currCallback;
-
-  this.node.onaudioprocess = function(e){
-    if (!recording) return;
-    worker.postMessage({
-      command: 'record',
-      buffer: [
-        e.inputBuffer.getChannelData(0),
-        // e.inputBuffer.getChannelData(1)
-      ]
-    });
-  }
-
-  this.configure = function(cfg){
-    for (var prop in cfg){
-      if (cfg.hasOwnProperty(prop)){
-        config[prop] = cfg[prop];
-      }
-    }
-  }
-
-  this.record = function(){
-    recording = true;
-  }
-
-  this.stop = function(){
-    recording = false;
-  }
-
-  this.clear = function(){
-    worker.postMessage({ command: 'clear' });
-  }
-
-  this.getBuffers = function(cb) {
-    currCallback = cb || config.callback;
-    worker.postMessage({ command: 'getBuffers' })
-  }
-
-  this.exportWAV = function(cb, type){
-    currCallback = cb || config.callback;
-    type = type || config.type || 'audio/wav';
-    if (!currCallback) throw new Error('Callback not set');
-    worker.postMessage({
-      command: 'exportWAV',
-      type: type
-    });
-  }
-
-  worker.onmessage = function(e) {
-    var blob = e.data;
-    currCallback(blob);
-  }
-
-
-  source.connect(this.node);
-  this.node.connect(this.context.destination);   // if the script node is not connected to an output the "onaudioprocess" event is not triggered in chrome.
-};
-
-window.Recorder = Recorder;
-
 
 
 class App2 extends Component {
@@ -291,27 +177,27 @@ class App2 extends Component {
     }
   }
   gotStream(stream) {
-        this.inputPoint = this.audioContext.createGain();
+    this.inputPoint = this.audioContext.createGain();
 
-        // Create an AudioNode from the stream.
-        this.realAudioInput = this.audioContext.createMediaStreamSource(stream);
-        this.audioInput = this.realAudioInput;
-        this.audioInput.connect(this.inputPoint);
+    // Create an AudioNode from the stream.
+    this.realAudioInput = this.audioContext.createMediaStreamSource(stream);
+    this.audioInput = this.realAudioInput;
+    this.audioInput.connect(this.inputPoint);
 
-        // audioInput = convertToMono( input );
+    // audioInput = convertToMono( input );
 
-        this.analyserNode = this.audioContext.createAnalyser();
-        this.analyserNode.fftSize = 2048;
-        this.inputPoint.connect( this.analyserNode );
+    this.analyserNode = this.audioContext.createAnalyser();
+    this.analyserNode.fftSize = 2048;
+    this.inputPoint.connect( this.analyserNode );
 
-        this.audioRecorder = new window.Recorder( this.inputPoint );
+    this.audioRecorder = new Recorder( this.inputPoint );
 
-        this.zeroGain = this.audioContext.createGain();
-        this.zeroGain.gain.value = 0.0;
-        this.inputPoint.connect( this.zeroGain );
-        this.zeroGain.connect( this.audioContext.destination );
+    this.zeroGain = this.audioContext.createGain();
+    this.zeroGain.gain.value = 0.0;
+    this.inputPoint.connect( this.zeroGain );
+    this.zeroGain.connect( this.audioContext.destination );
 
-        this.updateAnalysers();
+    this.updateAnalysers();
   }
 
   doneEncoding(blob) {
