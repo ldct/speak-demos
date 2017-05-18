@@ -3,6 +3,7 @@ import React, { Component } from 'react';
 import VocabEntryListDemo from './VocabEntryListDemo.jsx';
 import WeatherDemo from './WeatherDemo.jsx';
 import RecorderDemo from './RecorderDemo.jsx';
+import PronomDemo from './PronomDemo.jsx';
 
 import './App.css';
 
@@ -40,6 +41,7 @@ class App extends Component {
         <Route exact path="/vocab" component={VocabEntryListDemo} />
         <Route exact path="/weather" component={WeatherDemo} />
         <Route exact path="/record" component={RecorderDemo} />
+        <Route exact path="/pronom" component={PronomDemo} />
         <Route path="*" component={NotFound} />
       </Switch>
     </Router>
