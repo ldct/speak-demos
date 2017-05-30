@@ -4,6 +4,7 @@ import VocabEntryListDemo from './VocabEntryListDemo.jsx';
 import WeatherDemo from './WeatherDemo.jsx';
 import RecorderDemo from './RecorderDemo.jsx';
 import PronomDemo from './PronomDemo.jsx';
+import DebugVR from './DebugVR.jsx';
 
 import './App.css';
 
@@ -28,6 +29,7 @@ class TOC extends Component {
       <li><Link to="/weather">Weather Exercise</Link></li>
       <li><Link to="/record">Recorder demo</Link></li>
       <li><a href="/slides/slides.html">Pronom Complement</a></li>
+      <li><Link to="/debug-vr">Debug VR</Link></li>
     </ol>
   }
 }
@@ -42,6 +44,7 @@ class App extends Component {
         <Route exact path="/weather" component={WeatherDemo} />
         <Route exact path="/record" component={RecorderDemo} />
         <Route exact path="/pronom" component={PronomDemo} />
+        <Route exact path="/debug-vr" component={DebugVR} />
         <Route path="*" component={NotFound} />
       </Switch>
     </Router>
