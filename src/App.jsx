@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import VocabEntryListDemo from './VocabEntryListDemo.jsx';
 import WeatherDemo from './WeatherDemo.jsx';
 import RecorderDemo from './RecorderDemo.jsx';
-import PronomDemo from './PronomDemo.jsx';
+import PronomDemo from './PronomDemo/PronomDemo.jsx';
 import DebugVR from './DebugVR.jsx';
 
 import './App.css';
