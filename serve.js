@@ -1,5 +1,4 @@
 const express = require('express');
-const subtitles = require('./subtitles');
 const fs = require('fs');
 const app = express();
 const https = require('https');
