@@ -4,7 +4,7 @@ const app = express();
 const https = require('https');
 const http = require('http');
 
-app.use('/static', express.static('static'));
+app.use('/static', express.static('build/static'));
 
 app.get('*', (req, res) => {
   console.log('hi');
