@@ -7,6 +7,7 @@ const http = require('http');
 app.use('/static', express.static('static'));
 
 app.get('*', (req, res) => {
+  console.log('hi');
   res.sendFile('index.html', {'root': 'build'});
 });
 
