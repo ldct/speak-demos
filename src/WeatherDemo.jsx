@@ -81,6 +81,11 @@ class _SentenceEntry extends Component {
       }
     }
 
+    const forcer = this.props.forcer || ((x) => x);
+
+    final_transcript = forcer(final_transcript);
+    interim_transcript = forcer(interim_transcript);
+
     this.setState({
       final_transcript: final_transcript,
       interim_transcript: interim_transcript,
@@ -105,7 +110,14 @@ class _SentenceEntry extends Component {
         src={this.state.active ? recActive : rec} style={{height: '1.1em', marginRight: 5}} />
   }
   isCorrect() {
-    return canonicalSentence(this.state.interim_transcript + this.state.final_transcript) === canonicalSentence(this.props.rightAnswer);
+    for (let rightAnswer of this.props.rightAnswers) {
+      if (
+          canonicalSentence(this.state.interim_transcript + this.state.final_transcript)
+          === canonicalSentence(rightAnswer)) {
+        return true;
+      }
+    }
+    return false;
   }
   renderCorrectOrWrong() {
     if (1) {
@@ -198,7 +210,6 @@ class WeatherDemo extends Component {
       </div>
 
       <div style={{
-        // border: '1px solid pink',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -215,11 +226,11 @@ class WeatherDemo extends Component {
         alignItems: 'flex-start',
       }}>
 
-      <SentenceEntry audioSrc={Q1} responseAudioSrc={R1} label="Question 1" rightAnswer="à paris il pleut" />
-      <SentenceEntry audioSrc={Q2} responseAudioSrc={R2} label="Question 2" rightAnswer="à lyon il neige" />
-      <SentenceEntry audioSrc={Q3} responseAudioSrc={R3} label="Question 3" rightAnswer="à nice il fait du soleil" />
-      <SentenceEntry audioSrc={Q4} responseAudioSrc={R4} label="Question 4" rightAnswer="à rennes il y a du brouillard" />
-      <SentenceEntry audioSrc={Q5} responseAudioSrc={R5} label="Question 5" rightAnswer="à strasbourg le ciel est couvert" />
+      <SentenceEntry audioSrc={Q1} responseAudioSrc={R1} label="Question 1" rightAnswers={["à paris il pleut", "il pleut"]} />
+      <SentenceEntry audioSrc={Q2} responseAudioSrc={R2} label="Question 2" rightAnswers={["à lyon il neige", "il neige"]} />
+      <SentenceEntry audioSrc={Q3} responseAudioSrc={R3} label="Question 3" rightAnswers={["à nice il fait du soleil", "il fait du soleil"]} forcer={(x) => x.replace("Alice", "à Nice").replace("anis", "à Nice")} />
+      <SentenceEntry audioSrc={Q4} responseAudioSrc={R4} label="Question 4" rightAnswers={["à rennes il y a du brouillard", "il y a du brouillard"]} />
+      <SentenceEntry audioSrc={Q5} responseAudioSrc={R5} label="Question 5" rightAnswers={["à strasbourg le ciel est couvert", "le ciel est couvert"]} />
 
       </div>
 

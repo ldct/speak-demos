@@ -28,8 +28,7 @@ class TOC extends Component {
       <li><Link to="/vocab">Days of Week Exercise</Link></li>
       <li><Link to="/weather">Weather Exercise</Link></li>
       <li><Link to="/record">Recorder demo</Link></li>
-      <li><a href="/slides/slides.html">Pronom Complement</a></li>
-      <li><Link to="/debug-vr">Debug VR</Link></li>
+      <li><Link to="/pronom">Pronom Complement</Link></li>
     </ol>
   }
 }
